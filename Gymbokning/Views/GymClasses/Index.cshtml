@@ -7,8 +7,12 @@
 <h1>Index</h1>
 
 <p>
-    <a asp-action="Create">Create New</a>
+    @if (User.Identity?.IsAuthenticated == true && User.IsInRole("Admin"))
+    {
+        <a asp-action="Create">Create New</a>
+    }
 </p>
+
 <table class="table">
     <thead>
         <tr>
@@ -45,9 +49,12 @@
             <td>
                     @if (User.Identity?.IsAuthenticated == true)
                     {
-                        <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> <span> | </span>
+                        @if (User.IsInRole("Admin"))
+                        {
+                            <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> <span> | </span>
+                            <a asp-action="Delete" asp-route-id="@item.Id">Delete</a> <span> | </span>
+                        }
                         <a asp-action="Details" asp-route-id="@item.Id">Details</a> <span> | </span>
-                        <a asp-action="Delete" asp-route-id="@item.Id">Delete</a> <span> | </span>
                         <a asp-action="BookingToggle" asp-route-id="@item.Id">Book</a>
                     }
                     else
