@@ -36,6 +36,26 @@
         </dd>
     </dl>
 </div>
+
+<h3>Booked for this class</h3>
+<table class="table">
+    <thead>
+        <tr>
+            Email
+        </tr>
+    </thead>
+    <tbody>
+        @foreach(var booking in Model.UserGymClasses)
+        {
+            <tr>
+                <td>
+                    @booking.ApplicationUser.Email
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
 <div>
     <a asp-action="Edit" asp-route-id="@Model?.Id">Edit</a> |
     <a asp-action="Index">Back to List</a>
