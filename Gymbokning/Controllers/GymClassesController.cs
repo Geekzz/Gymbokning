@@ -26,8 +26,7 @@ namespace Gymbokning.Controllers
         [Authorize]
         public async Task<IActionResult> BookingToggle(int? id)
         {
-            if(id == null) return NotFound();
-
+            // Fetch the gym class with user bookings
             var gymClass = await _context.GymClasses
                 .Include(g => g.UserGymClasses)
                 .FirstOrDefaultAsync(g => g.Id == id);
@@ -37,25 +36,31 @@ namespace Gymbokning.Controllers
             var userId = _userManager.GetUserId(User);
             if (userId == null) return Unauthorized();
 
+            // Check if the user is already booked for this gym class
             var userBooking = gymClass.UserGymClasses
-                .FirstOrDefault(ug => ug.ApplicationUserId == userId);
+                .SingleOrDefault(ug => ug.ApplicationUserId == userId);
 
-            if(userBooking != null)
+            // If the user is already booked, do nothing and return to the index page
+            if (userBooking != null)
             {
-                gymClass.UserGymClasses.Remove(userBooking);
-            }
-            else
-            {
-                gymClass.UserGymClasses.Add(new ApplicationUserGymClass
-                {
-                    ApplicationUserId = userId,
-                    GymClassId = gymClass.Id
-                });
+                return RedirectToAction(nameof(Index)); 
             }
 
+            // Add a new booking for the user
+            _context.Add(new ApplicationUserGymClass
+            {
+                ApplicationUserId = userId,
+                GymClassId = gymClass.Id
+            });
+
+            // Save changes to the database
             await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
+
+            return RedirectToAction(nameof(Index)); // Redirect to the index page after booking
         }
+
+
+
 
         // GET: GymClasses
         public async Task<IActionResult> Index()
@@ -72,7 +77,10 @@ namespace Gymbokning.Controllers
             }
 
             var gymClass = await _context.GymClasses
-                .FirstOrDefaultAsync(m => m.Id == id);
+                .Include(g => g.UserGymClasses)  // Include the bookings (UserGymClasses)
+                .ThenInclude(ug => ug.ApplicationUser)  // Include the ApplicationUser (User) for each booking
+                .FirstOrDefaultAsync(g => g.Id == id);
+
             if (gymClass == null)
             {
                 return NotFound();

@@ -19,8 +19,8 @@ namespace Gymbokning.Data
             var adminEmail = "admin@Gymbokning.se";
             var userEmail = "user@user.com";
             await AddRolesAsync(roleNames);
-            var admin = await AddAccountAsync(adminEmail, "P@55w.rd");
-            var user = await AddAccountAsync(userEmail, "Pa55w.rd");
+            var admin = await AddAccountAsync(adminEmail, "Admin", "Adminsson", "P@55w.rd");
+            var user = await AddAccountAsync(userEmail, "User", "Usersson", "Pa55w.rd");
             await AddUserToRoleAsync(admin, "Admin");
             await AddUserToRoleAsync(user, "User");
         }
@@ -42,7 +42,7 @@ namespace Gymbokning.Data
                 if (!result.Succeeded) throw new Exception(string.Join("\n", result.Errors));
             }
         }
-        private static async Task<ApplicationUser> AddAccountAsync(string accountEmail, string pw)
+        private static async Task<ApplicationUser> AddAccountAsync(string accountEmail, string fName, string lName, string pw)
         {
             var found = await userManager.FindByEmailAsync(accountEmail);
             if (found != null) return null!;
@@ -50,6 +50,8 @@ namespace Gymbokning.Data
             {
                 UserName = accountEmail,
                 Email = accountEmail,
+                FirstName = fName,
+                LastName = lName,
                 EmailConfirmed = true
             };
             var result = await userManager.CreateAsync(user, pw);
