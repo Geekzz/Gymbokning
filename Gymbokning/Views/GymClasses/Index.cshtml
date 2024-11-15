@@ -1,68 +1,78 @@
 ﻿@model IEnumerable<Gymbokning.Models.GymClass>
 
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "Gym Classes";
+    string? userId = User.Identity?.IsAuthenticated == true
+        ? User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+        : null;
 }
 
-<h1>Index</h1>
+<h1>Gym Classes</h1>
 
-<p>
-    @if (User.Identity?.IsAuthenticated == true && User.IsInRole("Admin"))
-    {
-        <a asp-action="Create">Create New</a>
-    }
-</p>
+<form method="get">
+    <div>
+        <label>
+            <input type="checkbox" name="showPastClasses" value="true" /> Show Past Classes
+        </label>
+    </div>
+    <button type="submit">Apply Filter</button>
+</form>
+
+<!-- Create Link/Button only for Admins -->
+@if (User.Identity?.IsAuthenticated == true && User.IsInRole("Admin"))
+{
+    <div class="my-3">
+        <a class="btn btn-primary" asp-action="Create">Create New Gym Class</a>
+    </div>
+}
 
 <table class="table">
     <thead>
         <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.Name)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.StartTime)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Duration)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Description)
-            </th>
-            <th></th>
+            <th>Name</th>
+            <th>Start Time</th>
+            <th>Duration</th>
+            <th>Description</th>
+            <th>Actions</th>
         </tr>
     </thead>
     <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.Name)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.StartTime)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Duration)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Description)
-            </td>
-            <td>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.Name</td>
+                <td>@item.StartTime</td>
+                <td>@item.Duration</td>
+                <td>@item.Description</td>
+                <td>
                     @if (User.Identity?.IsAuthenticated == true)
                     {
-                        @if (User.IsInRole("Admin"))
+                        var userBooking = item.UserGymClasses
+                        .FirstOrDefault(ug => ug.ApplicationUserId == userId);
+
+                        if (userBooking != null)
                         {
-                            <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> <span> | </span>
-                            <a asp-action="Delete" asp-route-id="@item.Id">Delete</a> <span> | </span>
+                            <a asp-action="BookingToggle" asp-route-id="@item.Id">Unbook</a>
                         }
-                        <a asp-action="Details" asp-route-id="@item.Id">Details</a> <span> | </span>
-                        <a asp-action="BookingToggle" asp-route-id="@item.Id">Book</a>
+                        else
+                        {
+                            <a asp-action="BookingToggle" asp-route-id="@item.Id">Book</a>
+                        }
+                        <span> | </span>
                     }
-                    else
+
+                    <!-- Edit and Delete buttons only for Admins -->
+                    @if (User.Identity?.IsAuthenticated == true && User.IsInRole("Admin"))
                     {
-                        <a asp-action="Details" asp-route-id="@item.Id">Details</a>
+                        <a asp-action="Edit" asp-route-id="@item.Id">Edit</a>
+                                        <span> | </span>
+                        <a asp-action="Delete" asp-route-id="@item.Id" > Delete </a>
                     }
+
+                    <span> | </span>
+                    <a asp-action="Details" asp-route-id="@item.Id">Details</a>
                 </td>
-        </tr>
-}
+            </tr>
+        }
     </tbody>
 </table>

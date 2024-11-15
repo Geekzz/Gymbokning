@@ -1,0 +1,29 @@
+﻿@model IEnumerable<Gymbokning.Models.GymClass>
+
+@{
+    ViewData["Title"] = "Booked Classes";
+}
+
+<h1>Booked Gym Classes</h1>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Start Time</th>
+            <th>Duration</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.Name</td>
+                <td>@item.StartTime</td>
+                <td>@item.Duration</td>
+                <td>@item.Description</td>
+            </tr>
+        }
+    </tbody>
+</table>

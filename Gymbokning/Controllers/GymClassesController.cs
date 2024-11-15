@@ -40,18 +40,21 @@ namespace Gymbokning.Controllers
             var userBooking = gymClass.UserGymClasses
                 .SingleOrDefault(ug => ug.ApplicationUserId == userId);
 
-            // If the user is already booked, do nothing and return to the index page
+            // If the user is already booked, unbook
             if (userBooking != null)
             {
-                return RedirectToAction(nameof(Index)); 
+                //return RedirectToAction(nameof(Index)); 
+                _context.Remove(userBooking);
             }
-
-            // Add a new booking for the user
-            _context.Add(new ApplicationUserGymClass
+            else
             {
-                ApplicationUserId = userId,
-                GymClassId = gymClass.Id
-            });
+                // Add a new booking for the user
+                _context.Add(new ApplicationUserGymClass
+                {
+                    ApplicationUserId = userId,
+                    GymClassId = gymClass.Id
+                });
+            }
 
             // Save changes to the database
             await _context.SaveChangesAsync();
@@ -63,10 +66,76 @@ namespace Gymbokning.Controllers
 
 
         // GET: GymClasses
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(bool showPastClasses = false)
         {
-            return View(await _context.GymClasses.ToListAsync());
+            var currentDate = DateTime.Now;
+
+            // Filtrera gympassen direkt innan vi inkluderar relaterad data
+            IQueryable<GymClass> gymClassesQuery;
+
+            if (!showPastClasses)
+            {
+                gymClassesQuery = _context.GymClasses
+                    .Where(g => g.StartTime > currentDate); // Filtrera på StartTime först
+            }
+            else
+            {
+                gymClassesQuery = _context.GymClasses; // Om vi vill visa alla, inga filter
+            }
+
+            // Inkludera relaterade användare (UserGymClasses och ApplicationUser) efter filtrering
+            gymClassesQuery = gymClassesQuery
+                .Include(g => g.UserGymClasses)
+                .ThenInclude(ug => ug.ApplicationUser); // Inkludera användare
+
+            // Hämta gympassen och returnera till vyn
+            var gymClasses = await gymClassesQuery.ToListAsync();
+            return View(gymClasses);
         }
+
+        // Action to display booked classes
+        public async Task<IActionResult> BookedClasses()
+        {
+            var userId = User.Identity?.Name;  // Get the logged-in user's ID
+            if (userId == null)
+            {
+                return RedirectToAction("Index", "Home");  // Redirect if user is not authenticated
+            }
+
+            // Filter gym classes that the user has booked, no date filter
+            var bookedClassesQuery = _context.GymClasses
+                .Where(g => g.UserGymClasses.Any(ug => ug.ApplicationUser.UserName == userId)) // Classes the user has booked
+                .Include(g => g.UserGymClasses)
+                .ThenInclude(ug => ug.ApplicationUser); // Include related user data
+
+            var bookedClasses = await bookedClassesQuery.ToListAsync();
+
+            return View(bookedClasses);  // Pass the booked classes to the view
+        }
+
+
+        // Action to display history (past classes)
+        public async Task<IActionResult> History()
+        {
+            var userId = User.Identity?.Name;  // Get the logged-in user's ID
+            if (userId == null)
+            {
+                return RedirectToAction("Index", "Home");  // Redirect if user is not authenticated
+            }
+
+            var currentDate = DateTime.Now;
+
+            // Filter gym classes that the user has attended (past classes only)
+            var historyQuery = _context.GymClasses
+                .Where(g => g.UserGymClasses.Any(ug => ug.ApplicationUser.UserName == userId) && g.StartTime < currentDate) // Classes the user has attended
+                .Include(g => g.UserGymClasses)
+                .ThenInclude(ug => ug.ApplicationUser); // Include related user data
+
+            var historyClasses = await historyQuery.ToListAsync();
+
+            return View(historyClasses);  // Pass the history classes to the view
+        }
+
 
         // GET: GymClasses/Details/5
         public async Task<IActionResult> Details(int? id)
